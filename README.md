@@ -73,6 +73,28 @@ judgewatch site
 Probe calls run 4-way concurrent by default (`--workers`), a judge finishes in
 a couple of minutes, and progress is printed as each probe starts.
 
+## Gate your CI on it
+
+`judgewatch check` audits a judge and exits non-zero when a bias metric
+breaches a threshold — useful as a scheduled CI job on any pipeline that
+depends on an LLM judge:
+
+```
+judgewatch check --judges anthropic:claude-haiku-4-5 \
+  --max-position-flip 0.25 --max-bandwagon-flip 0.25 --min-consistency 0.6
+```
+
+| Threshold | Default | Meaning |
+|---|---|---|
+| `--max-position-flip` | 0.25 | flip rate when answer order is swapped |
+| `--max-verbosity-pref` | 0.65 | padded-answer preference rate |
+| `--max-bandwagon-flip` | 0.25 | flips caused by a fabricated consensus |
+| `--min-consistency` | 0.60 | exact-agreement rate on repeat scoring |
+| `--max-failures` | 0.05 | API errors + unparseable verdicts |
+
+The defaults are starting points, not community norms — tune them to your own
+risk tolerance. `--save results.json` keeps the full per-item records.
+
 ## Data
 
 Everything the leaderboard shows is also published as JSON:
@@ -83,6 +105,15 @@ The payload carries the latest run, a `generated_at` timestamp, and the full
 month-by-month `history`, so you can build badges, dashboards, or your own
 trend analysis on top of it. Raw per-item records (every verdict, every score)
 live in the repo under `data/runs/<month>/`.
+
+Per-judge [shields.io](https://shields.io) endpoints are published under
+`badges/` — to show a judge's current audit result in your own README:
+
+```
+![judgewatch](https://img.shields.io/endpoint?url=https%3A%2F%2Fmohammadi.cv%2Fjudgewatch%2Fbadges%2Fclaude-haiku-4-5.json)
+```
+
+(`badges/leader.json` always points at the currently best-ranked judge.)
 
 ### Cost
 
@@ -109,8 +140,8 @@ Sponsors](https://github.com/sponsors/mohammadi-hadi).
 
 - Self-preference probe: does a judge favor answers written by its own model
   family? (Needs a generation stage, so it lands once sponsorship covers it.)
-- Trend charts on the leaderboard (month-over-month deltas already show in
-  the table once two runs exist).
+- Richer trend charts (the table already shows month-over-month deltas and a
+  position-flip sparkline once two runs exist).
 - `probeset_v2.yaml` with community-contributed items (v1 stays frozen and
   keeps running for comparability).
 
