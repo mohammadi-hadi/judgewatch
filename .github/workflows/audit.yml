@@ -1,0 +1,44 @@
+name: Monthly audit
+
+on:
+  schedule:
+    - cron: "0 6 1 * *"
+  workflow_dispatch:
+    inputs:
+      judges:
+        description: "Override judge list (comma-separated provider:model)"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: github.repository == 'mohammadi-hadi/judgewatch'
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Run audit
+        run: |
+          MONTH=$(date -u +%Y-%m)
+          if [ -n "${{ inputs.judges }}" ]; then
+            python -m judgewatch run --month "$MONTH" --judges "${{ inputs.judges }}"
+          else
+            python -m judgewatch run --month "$MONTH"
+          fi
+          python -m judgewatch report
+          python -m judgewatch site
+      - name: Commit results
+        run: |
+          git config user.name "Hadi Mohammadi"
+          git config user.email "50410241+mohammadi-hadi@users.noreply.github.com"
+          git add data docs
+          git commit -m "Monthly audit for $(date -u +%Y-%m)" || echo "Nothing to commit"
+          git push
