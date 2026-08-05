@@ -25,7 +25,22 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .
+      - name: Decide whether to run
+        id: plan
+        run: |
+          if [ -n "${{ inputs.judges }}" ]; then
+            echo "go=1" >> "$GITHUB_OUTPUT"
+          else
+            ENABLED=$(python -c "import yaml; print(sum(1 for j in (yaml.safe_load(open('judges.yaml')) or {}).get('judges', []) if j.get('enabled')))")
+            if [ "$ENABLED" -gt 0 ]; then
+              echo "go=1" >> "$GITHUB_OUTPUT"
+            else
+              echo "go=0" >> "$GITHUB_OUTPUT"
+              echo "No judges enabled and no override given - nothing to audit."
+            fi
+          fi
       - name: Run audit
+        if: steps.plan.outputs.go == '1'
         run: |
           MONTH=$(date -u +%Y-%m)
           if [ -n "${{ inputs.judges }}" ]; then
@@ -36,9 +51,11 @@ jobs:
           python -m judgewatch report
           python -m judgewatch site
       - name: Commit results
+        if: steps.plan.outputs.go == '1'
         run: |
           git config user.name "Hadi Mohammadi"
           git config user.email "50410241+mohammadi-hadi@users.noreply.github.com"
           git add data docs
           git commit -m "Monthly audit for $(date -u +%Y-%m)" || echo "Nothing to commit"
+          git pull --rebase origin main
           git push
