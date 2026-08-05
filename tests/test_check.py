@@ -5,7 +5,9 @@ import pytest
 from judgewatch.__main__ import main
 from judgewatch.check import evaluate
 
-PROBESET = str(Path(__file__).resolve().parent.parent / "probes" / "probeset_v1.yaml")
+PROBESET = str(
+    Path(__file__).resolve().parent.parent / "judgewatch" / "probes" / "probeset_v1.yaml"
+)
 
 
 def test_evaluate_kinds_and_missing_data():

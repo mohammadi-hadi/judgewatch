@@ -19,9 +19,9 @@ Anthropic model or OpenAI-compatible `/chat/completions` endpoint works.
 
 ## Probe items
 
-The current probe set is frozen — items in `probes/probeset_v1.yaml` must not
-change, or months stop being comparable. Propose new items for a future
-`probeset_v2.yaml`. Criteria:
+The current probe set is frozen — items in
+`judgewatch/probes/probeset_v1.yaml` must not change, or months stop being
+comparable. Propose new items for a future `probeset_v2.yaml`. Criteria:
 
 - **Pairs**: both answers self-contained and plausible. Close-call pairs must
   be genuinely defensible on both sides; clear-gap pairs must contain one

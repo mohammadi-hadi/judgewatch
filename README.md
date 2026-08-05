@@ -25,7 +25,8 @@ not noise.
 
 ## Method
 
-- The probe set (`probes/probeset_v1.yaml`) is frozen and versioned. The same
+- The probe set (`judgewatch/probes/probeset_v1.yaml`, shipped with the
+  package) is frozen and versioned. The same
   36 hand-written items run every month, so results are comparable across
   runs and drift is attributable to the judge, not the test.
 - Every pairwise item is judged in **both orders**, which separates position

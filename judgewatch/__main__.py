@@ -7,7 +7,7 @@ import argparse
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import check, report, runner, sitegen
+from . import __version__, check, report, runner, sitegen
 
 
 def _resolve_specs(args, parser):
@@ -25,6 +25,7 @@ def _resolve_specs(args, parser):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="judgewatch")
+    parser.add_argument("--version", action="version", version=__version__)
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     common = argparse.ArgumentParser(add_help=False)

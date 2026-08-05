@@ -1,7 +1,8 @@
 """Run the full probe battery against one or more judges and write results.
 
-All paths are relative to the repository root — run commands from there
-(the Makefile and CI both do).
+The frozen probe set ships inside the package, so an installed judgewatch
+works standalone; data/ and docs/ output paths are relative to the working
+directory (the repository root in the Makefile and CI).
 """
 
 import json
@@ -15,7 +16,7 @@ from .clients import judge_from_spec
 from .metrics import compute_metrics
 from .probeset import load_probeset
 
-DEFAULT_PROBESET = Path("probes/probeset_v1.yaml")
+DEFAULT_PROBESET = Path(__file__).resolve().parent / "probes" / "probeset_v1.yaml"
 
 
 def _log(message):

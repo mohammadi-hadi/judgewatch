@@ -4,7 +4,9 @@ from pathlib import Path
 from judgewatch import runner
 from judgewatch.probeset import load_probeset
 
-PROBESET = Path(__file__).resolve().parent.parent / "probes" / "probeset_v1.yaml"
+PROBESET = (
+    Path(__file__).resolve().parent.parent / "judgewatch" / "probes" / "probeset_v1.yaml"
+)
 
 
 def test_probeset_loads_and_counts():
