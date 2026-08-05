@@ -73,12 +73,19 @@ def test_site_renders_judges_with_deltas(tmp_path):
 
     assert "Judge &lt;One&gt;" in html
     assert "25%" in html
-    assert '<span class="delta">-15</span>' in html      # position flips 40% -> 25%
+    # position flips 40% -> 25%: lower is better, so the delta is an improvement
+    assert '<span class="delta good">-15</span>' in html
     assert 'class="ref"' in html                          # 50% chance line on verbosity
+    assert 'class="spark"' in html                        # trend sparkline
     assert "updated 2026-08-05" in html
     assert "<script src" not in html and "<link rel" not in html  # self-contained
     assert (tmp_path / "docs" / ".nojekyll").exists()
     assert json.loads((tmp_path / "docs" / "data.json").read_text())["run"] == "2026-08"
+
+    leader = json.loads((tmp_path / "docs" / "badges" / "leader.json").read_text())
+    assert leader["schemaVersion"] == 1
+    assert "position flips" in leader["message"]
+    assert (tmp_path / "docs" / "badges" / "a.json").exists()
 
 
 def test_site_single_run_has_no_deltas(tmp_path):
@@ -95,7 +102,8 @@ def test_site_single_run_has_no_deltas(tmp_path):
         )
     )
     html = build_site(latest, tmp_path / "docs").read_text()
-    assert 'class="delta"' not in html
+    assert 'class="delta' not in html
+    assert 'class="spark"' not in html
 
 
 def test_site_empty_state(tmp_path):
@@ -103,3 +111,5 @@ def test_site_empty_state(tmp_path):
     latest.write_text(json.dumps({"run": None, "judges": [], "history": []}))
     html = build_site(latest, tmp_path / "docs").read_text()
     assert "first monthly run is pending" in html
+    leader = json.loads((tmp_path / "docs" / "badges" / "leader.json").read_text())
+    assert leader["message"] == "no audits yet"

@@ -4,14 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>judgewatch &mdash; monthly bias audits of LLM judges</title>
-<meta name="description" content="Monthly bias audits of LLM judges: position, verbosity, bandwagon and consistency probes on a frozen probe set.">
+<meta name="description" content="Monthly bias audits of LLM judges: the same frozen probe set, every month, so drift and bias are visible.">
+<meta property="og:title" content="judgewatch — monthly bias audits of LLM judges">
+<meta property="og:description" content="Monthly bias audits of LLM judges: the same frozen probe set, every month, so drift and bias are visible.">
+<meta property="og:url" content="https://mohammadi.cv/judgewatch/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
 <style>
   :root {
     color-scheme: light;
     --page: #f9f9f7; --surface: #fcfcfb;
     --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
     --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
-    --accent: #2a78d6;
+    --accent: #2a78d6; --delta-good: #006300; --delta-bad: #d03b3b;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -19,7 +24,7 @@
       --page: #0d0d0d; --surface: #1a1a19;
       --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
       --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
-      --accent: #3987e5;
+      --accent: #3987e5; --delta-good: #0ca30c; --delta-bad: #e66767;
     }
   }
   :root[data-theme="dark"] {
@@ -27,7 +32,7 @@
     --page: #0d0d0d; --surface: #1a1a19;
     --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
-    --accent: #3987e5;
+    --accent: #3987e5; --delta-good: #0ca30c; --delta-bad: #e66767;
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -68,7 +73,11 @@
   th { color: var(--muted); font-weight: 600; }
   tr:last-child td { border-bottom: none; }
   .tlabel { color: var(--ink); }
+  .trend { line-height: 0; }
+  .spark { display: inline-block; vertical-align: middle; }
   .delta { color: var(--muted); font-size: 11px; }
+  .delta.good { color: var(--delta-good); }
+  .delta.bad { color: var(--delta-bad); }
   .empty {
     background: var(--surface); border: 1px dashed var(--grid); border-radius: 10px;
     padding: 40px 24px; text-align: center; color: var(--ink-2);

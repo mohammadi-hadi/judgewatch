@@ -1,8 +1,9 @@
 """Render the static leaderboard (docs/) from data/latest.json.
 
-Outputs are self-contained: inline CSS, no external requests, light/dark via
-prefers-color-scheme plus a data-theme override. Alongside index.html, the
-full payload is published as docs/data.json for machine consumption.
+Outputs are self-contained: inline CSS/SVG, no external requests, light/dark
+via prefers-color-scheme plus a data-theme override. Alongside index.html the
+generator publishes docs/data.json (the full payload) and docs/badges/*.json
+(shields.io endpoint format).
 """
 
 import html
@@ -10,6 +11,11 @@ import json
 from pathlib import Path
 
 REPO_URL = "https://github.com/mohammadi-hadi/judgewatch"
+SITE_URL = "https://mohammadi.cv/judgewatch/"
+TAGLINE = (
+    "Monthly bias audits of LLM judges: the same frozen probe set, "
+    "every month, so drift and bias are visible."
+)
 
 # (metric key, panel title, note, reference line as a fraction or None)
 METRIC_PANELS = [
@@ -57,9 +63,17 @@ TABLE_COLUMNS = [
     ("failure_rate", "Failures"),
 ]
 
+# Metrics where the ideal is 50% rather than an extreme.
+CENTERED_METRICS = {"verbosity_preference_rate", "first_slot_rate"}
+HIGHER_IS_BETTER = {"consistency_agreement_rate"}
+
 
 def _pct(value):
     return "–" if value is None else f"{value * 100:.0f}%"
+
+
+def _slug(judge_id):
+    return judge_id.replace("/", "-").replace(":", "-")
 
 
 def _panel(judges, key, title, note, ref):
@@ -87,30 +101,86 @@ def _panel(judges, key, title, note, ref):
     )
 
 
-def _delta(current, previous):
+def _delta_class(key, current, previous):
+    if key in CENTERED_METRICS:
+        improved = abs(current - 0.5) < abs(previous - 0.5)
+        worsened = abs(current - 0.5) > abs(previous - 0.5)
+    elif key in HIGHER_IS_BETTER:
+        improved, worsened = current > previous, current < previous
+    else:
+        improved, worsened = current < previous, current > previous
+    return " good" if improved else " bad" if worsened else ""
+
+
+def _delta(key, current, previous):
     if current is None or previous is None:
         return ""
     points = round((current - previous) * 100)
     if points == 0:
         return ""
-    return f' <span class="delta">{points:+d}</span>'
+    cls = _delta_class(key, current, previous)
+    return f' <span class="delta{cls}">{points:+d}</span>'
 
 
-def _table(judges, previous_metrics):
+def _series(history, judge_id, key="position_flip_rate"):
+    points = []
+    for month in history:
+        for judge in month["judges"]:
+            if judge["judge"] == judge_id:
+                value = judge["metrics"].get(key)
+                if value is not None:
+                    points.append((month["run"], value))
+    return points
+
+
+def _sparkline(points):
+    width, height, pad = 96, 24, 3
+    n = len(points)
+    xs = [pad + i * (width - 2 * pad) / (n - 1) for i in range(n)]
+    ys = [height - pad - v * (height - 2 * pad) for _, v in points]
+    path = " ".join(
+        f"{'M' if i == 0 else 'L'}{xs[i]:.1f},{ys[i]:.1f}" for i in range(n)
+    )
+    title = html.escape(
+        "position flips: " + ", ".join(f"{run} {v * 100:.0f}%" for run, v in points)
+    )
+    return (
+        f'<svg class="spark" width="{width}" height="{height}" '
+        f'viewBox="0 0 {width} {height}" role="img" aria-label="{title}">'
+        f"<title>{title}</title>"
+        f'<path d="{path}" fill="none" stroke="var(--accent)" stroke-width="2" '
+        f'stroke-linecap="round" stroke-linejoin="round"/>'
+        f'<circle cx="{xs[-1]:.1f}" cy="{ys[-1]:.1f}" r="3" fill="var(--accent)"/>'
+        f"</svg>"
+    )
+
+
+def _table(judges, previous_metrics, history):
+    sparks = {
+        j["judge"]: points
+        for j in judges
+        if len(points := _series(history, j["judge"])) >= 2
+    }
     head = "".join(f"<th>{html.escape(t)}</th>" for _, t in TABLE_COLUMNS)
+    trend_head = "<th>Trend</th>" if sparks else ""
     body = []
     for judge in judges:
         prev = previous_metrics.get(judge["judge"], {})
         cells = "".join(
             f'<td>{_pct(judge["metrics"].get(k))}'
-            f'{_delta(judge["metrics"].get(k), prev.get(k))}</td>'
+            f'{_delta(k, judge["metrics"].get(k), prev.get(k))}</td>'
             for k, _ in TABLE_COLUMNS
         )
+        trend = ""
+        if sparks:
+            spark = _sparkline(sparks[judge["judge"]]) if judge["judge"] in sparks else "–"
+            trend = f'<td class="trend">{spark}</td>'
         body.append(
-            f'<tr><td class="tlabel">{html.escape(judge["label"])}</td>{cells}</tr>'
+            f'<tr><td class="tlabel">{html.escape(judge["label"])}</td>'
+            f"{trend}{cells}</tr>"
         )
     return (
-        f'<table><thead><tr><th>Judge</th>{head}</tr></thead>'
+        f'<table><thead><tr><th>Judge</th>{trend_head}{head}</tr></thead>'
         f'<tbody>{"".join(body)}</tbody></table>'
     )
 
@@ -122,9 +192,7 @@ def render(payload):
 
     previous_metrics = {}
     if len(history) >= 2:
-        previous_metrics = {
-            j["judge"]: j["metrics"] for j in history[-2]["judges"]
-        }
+        previous_metrics = {j["judge"]: j["metrics"] for j in history[-2]["judges"]}
 
     if judges:
         status = (
@@ -135,15 +203,17 @@ def render(payload):
         )
         panels = "".join(_panel(judges, k, t, n, r) for k, t, n, r in METRIC_PANELS)
         delta_note = (
-            '<p class="note">Small figures show the change vs the previous run, '
-            "in percentage points.</p>"
+            '<p class="note">Small figures show the change vs the previous run in '
+            "percentage points; green moved the right way, red the wrong way "
+            "(for verbosity and first-slot, the right way is toward 50%). "
+            "The trend line tracks position flips across runs.</p>"
             if previous_metrics
             else ""
         )
         content = (
             f'<div class="grid">{panels}</div>'
             f'<h2>All metrics</h2><div class="tablewrap">'
-            f"{_table(judges, previous_metrics)}</div>{delta_note}"
+            f"{_table(judges, previous_metrics, history)}</div>{delta_note}"
         )
     else:
         status = "No audits published yet &mdash; the first monthly run is pending."
@@ -163,14 +233,19 @@ def render(payload):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>judgewatch &mdash; monthly bias audits of LLM judges</title>
-<meta name="description" content="Monthly bias audits of LLM judges: position, verbosity, bandwagon and consistency probes on a frozen probe set.">
+<meta name="description" content="{TAGLINE}">
+<meta property="og:title" content="judgewatch — monthly bias audits of LLM judges">
+<meta property="og:description" content="{TAGLINE}">
+<meta property="og:url" content="{SITE_URL}">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
 <style>
   :root {{
     color-scheme: light;
     --page: #f9f9f7; --surface: #fcfcfb;
     --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
     --grid: #e1e0d9; --border: rgba(11,11,11,0.10);
-    --accent: #2a78d6;
+    --accent: #2a78d6; --delta-good: #006300; --delta-bad: #d03b3b;
   }}
   @media (prefers-color-scheme: dark) {{
     :root:not([data-theme="light"]) {{
@@ -178,7 +253,7 @@ def render(payload):
       --page: #0d0d0d; --surface: #1a1a19;
       --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
       --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
-      --accent: #3987e5;
+      --accent: #3987e5; --delta-good: #0ca30c; --delta-bad: #e66767;
     }}
   }}
   :root[data-theme="dark"] {{
@@ -186,7 +261,7 @@ def render(payload):
     --page: #0d0d0d; --surface: #1a1a19;
     --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
     --grid: #2c2c2a; --border: rgba(255,255,255,0.10);
-    --accent: #3987e5;
+    --accent: #3987e5; --delta-good: #0ca30c; --delta-bad: #e66767;
   }}
   * {{ box-sizing: border-box; margin: 0; }}
   body {{
@@ -227,7 +302,11 @@ def render(payload):
   th {{ color: var(--muted); font-weight: 600; }}
   tr:last-child td {{ border-bottom: none; }}
   .tlabel {{ color: var(--ink); }}
+  .trend {{ line-height: 0; }}
+  .spark {{ display: inline-block; vertical-align: middle; }}
   .delta {{ color: var(--muted); font-size: 11px; }}
+  .delta.good {{ color: var(--delta-good); }}
+  .delta.bad {{ color: var(--delta-bad); }}
   .empty {{
     background: var(--surface); border: 1px dashed var(--grid); border-radius: 10px;
     padding: 40px 24px; text-align: center; color: var(--ink-2);
@@ -241,7 +320,7 @@ def render(payload):
 <body>
 <main>
   <h1><a href="{REPO_URL}">judgewatch</a></h1>
-  <p class="tagline">Monthly bias audits of LLM judges: the same frozen probe set, every month, so drift and bias are visible.</p>
+  <p class="tagline">{TAGLINE}</p>
   <p class="status">{status}{updated}</p>
   {content}
   <h2>Method</h2>
@@ -263,11 +342,47 @@ def render(payload):
 """
 
 
+def _write_badges(payload, docs):
+    badges = docs / "badges"
+    badges.mkdir(exist_ok=True)
+    judges = payload.get("judges", [])
+    if judges:
+        top = judges[0]
+        leader = {
+            "schemaVersion": 1,
+            "label": "judgewatch",
+            "message": (
+                f'{top["label"]}: {_pct(top["metrics"].get("position_flip_rate"))} '
+                "position flips"
+            ),
+            "color": "2a78d6",
+        }
+    else:
+        leader = {
+            "schemaVersion": 1,
+            "label": "judgewatch",
+            "message": "no audits yet",
+            "color": "9f9f9f",
+        }
+    (badges / "leader.json").write_text(json.dumps(leader) + "\n")
+    for judge in judges:
+        badge = {
+            "schemaVersion": 1,
+            "label": "judgewatch",
+            "message": (
+                f'{_pct(judge["metrics"].get("position_flip_rate"))} position flips'
+            ),
+            "color": "2a78d6",
+        }
+        (badges / f"{_slug(judge['judge'])}.json").write_text(json.dumps(badge) + "\n")
+
+
 def build_site(latest_path, docs_dir):
     payload = json.loads(Path(latest_path).read_text())
     docs = Path(docs_dir)
     docs.mkdir(parents=True, exist_ok=True)
     (docs / "index.html").write_text(render(payload))
     (docs / "data.json").write_text(json.dumps(payload, indent=2) + "\n")
+    _write_badges(payload, docs)
     (docs / ".nojekyll").write_text("")
     return docs / "index.html"
