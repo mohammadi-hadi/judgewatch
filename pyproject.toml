@@ -18,10 +18,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[project.scripts]
+judgewatch = "judgewatch.__main__:main"
 
 [project.urls]
 Repository = "https://github.com/mohammadi-hadi/judgewatch"
+Leaderboard = "https://mohammadi.cv/judgewatch/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["judgewatch"]
+
+[tool.ruff]
+target-version = "py310"

@@ -6,6 +6,7 @@ so the audit measures the configuration people actually deploy.
 
 import hashlib
 import os
+import time
 
 import httpx
 
@@ -58,21 +59,34 @@ class OpenAICompatJudge:
         self.max_tokens = max_tokens
 
     def complete(self, prompt: str) -> str:
-        try:
-            response = httpx.post(
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json={
-                    "model": self.model,
-                    "max_tokens": self.max_tokens,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-                timeout=120,
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"] or ""
-        except httpx.HTTPError as exc:
-            raise JudgeError(str(exc)) from exc
+        last_exc: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = httpx.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json={
+                        "model": self.model,
+                        "max_tokens": self.max_tokens,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                    timeout=120,
+                )
+                response.raise_for_status()
+            except httpx.TransportError as exc:
+                last_exc = exc
+            except httpx.HTTPStatusError as exc:
+                last_exc = exc
+                if exc.response.status_code != 429 and exc.response.status_code < 500:
+                    raise JudgeError(str(exc)) from exc
+            else:
+                try:
+                    return response.json()["choices"][0]["message"]["content"] or ""
+                except (KeyError, IndexError, ValueError) as exc:
+                    raise JudgeError(f"unexpected response shape: {exc}") from exc
+            if attempt < 2:
+                time.sleep(2**attempt)
+        raise JudgeError(str(last_exc)) from last_exc
 
 
 class MockJudge:
@@ -84,8 +98,9 @@ class MockJudge:
     def complete(self, prompt: str) -> str:
         digest = int(hashlib.md5(prompt.encode()).hexdigest(), 16)
         if '"verdict"' in prompt:
-            return '{"verdict": "%s"}' % ("A" if digest % 10 < 6 else "B")
-        return '{"score": %d}' % (digest % 10 + 1)
+            verdict = "A" if digest % 10 < 6 else "B"
+            return f'{{"verdict": "{verdict}"}}'
+        return f'{{"score": {digest % 10 + 1}}}'
 
 
 def judge_from_spec(spec: dict):

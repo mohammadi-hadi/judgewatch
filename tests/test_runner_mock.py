@@ -39,6 +39,14 @@ def test_mock_end_to_end(tmp_path):
     assert set(written["details"]) == {"position", "bandwagon", "verbosity", "consistency"}
 
 
+def test_workers_do_not_change_results(tmp_path):
+    spec = [{"provider": "mock", "model": "mock-judge", "label": "Mock"}]
+    serial = runner.run("2026-01", tmp_path / "s", spec, probeset_path=PROBESET, workers=1)
+    threaded = runner.run("2026-01", tmp_path / "t", spec, probeset_path=PROBESET, workers=4)
+    assert serial[0]["metrics"] == threaded[0]["metrics"]
+    assert serial[0]["details"] == threaded[0]["details"]
+
+
 def test_parse_judge_arg():
     assert runner.parse_judge_arg("anthropic:claude-haiku-4-5")["model"] == "claude-haiku-4-5"
     assert runner.parse_judge_arg("claude-haiku-4-5")["provider"] == "anthropic"
