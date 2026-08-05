@@ -153,6 +153,13 @@ Sponsors](https://github.com/sponsors/mohammadi-hadi).
 - [trajectory-judge](https://github.com/mohammadi-hadi/trajectory-judge) —
   evaluating agent trajectories with LLM judges.
 
+## Citing
+
+Releases are archived on Zenodo. Cite the concept DOI
+[10.5281/zenodo.21806464](https://doi.org/10.5281/zenodo.21806464), which
+always resolves to the latest version; structured metadata is in
+[CITATION.cff](CITATION.cff).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
