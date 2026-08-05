@@ -8,7 +8,7 @@ behind stable API names. judgewatch runs a **frozen probe set** against popular
 judge models on a monthly schedule and publishes the results, so you can see
 which judge to trust this month and whether yours changed under you.
 
-**Leaderboard:** https://mohammadi-hadi.github.io/judgewatch/ (first audit pending)
+**Leaderboard:** https://mohammadi.cv/judgewatch/ (first audit pending)
 
 ## What it measures
 
