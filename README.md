@@ -61,6 +61,29 @@ Judges are configured in `judges.yaml` (all disabled by default so nothing
 spends credits by accident). Any Anthropic model or OpenAI-compatible
 `/chat/completions` endpoint works.
 
+Installing the package also installs a `judgewatch` command with the same
+subcommands:
+
+```
+judgewatch run --judges anthropic:claude-haiku-4-5 --workers 8
+judgewatch report
+judgewatch site
+```
+
+Probe calls run 4-way concurrent by default (`--workers`), a judge finishes in
+a couple of minutes, and progress is printed as each probe starts.
+
+## Data
+
+Everything the leaderboard shows is also published as JSON:
+
+**https://mohammadi.cv/judgewatch/data.json**
+
+The payload carries the latest run, a `generated_at` timestamp, and the full
+month-by-month `history`, so you can build badges, dashboards, or your own
+trend analysis on top of it. Raw per-item records (every verdict, every score)
+live in the repo under `data/runs/<month>/`.
+
 ### Cost
 
 A full audit is 96 calls per judge with short prompts. Assuming roughly 700
@@ -86,7 +109,8 @@ Sponsors](https://github.com/sponsors/mohammadi-hadi).
 
 - Self-preference probe: does a judge favor answers written by its own model
   family? (Needs a generation stage, so it lands once sponsorship covers it.)
-- Month-over-month trend view on the leaderboard, once there are two runs.
+- Trend charts on the leaderboard (month-over-month deltas already show in
+  the table once two runs exist).
 - `probeset_v2.yaml` with community-contributed items (v1 stays frozen and
   keeps running for comparability).
 

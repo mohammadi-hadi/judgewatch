@@ -4,11 +4,12 @@
 
 ```
 make install
+make lint
 make test
 ```
 
 Tests run entirely offline against a deterministic mock judge — no API keys
-needed.
+needed. CI runs the same lint + tests on Python 3.10 and 3.14.
 
 ## Adding a judge
 
