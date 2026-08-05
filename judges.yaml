@@ -1,0 +1,33 @@
+# Judges to audit. Everything is disabled by default so that nothing spends
+# API credits by accident — flip enabled: true, or pass --judges on the CLI:
+#
+#   python -m judgewatch run --judges anthropic:claude-haiku-4-5
+#
+# provider: anthropic          -> reads ANTHROPIC_API_KEY
+# provider: openai-compatible  -> reads api_key_env (default OPENAI_API_KEY),
+#                                 works with any /chat/completions endpoint
+#                                 (OpenAI, OpenRouter, Together, local servers)
+#                                 via base_url.
+
+judges:
+  - provider: anthropic
+    model: claude-haiku-4-5
+    label: Claude Haiku 4.5
+    enabled: false
+
+  - provider: anthropic
+    model: claude-sonnet-5
+    label: Claude Sonnet 5
+    enabled: false
+
+  - provider: anthropic
+    model: claude-opus-5
+    label: Claude Opus 5
+    enabled: false
+
+  # - provider: openai-compatible
+  #   model: <model-id>
+  #   label: <display name>
+  #   base_url: https://api.openai.com/v1
+  #   api_key_env: OPENAI_API_KEY
+  #   enabled: false

@@ -1,0 +1,143 @@
+# judgewatch probe set, version 1.
+#
+# FROZEN as of 2026-08. Do not edit items in place — comparability across
+# monthly runs depends on the set staying byte-identical. To change items,
+# add probeset_v2.yaml and bump the runner default.
+#
+# pairs: judged in both orders (position probe) and with an injected
+#   consensus claim (bandwagon probe). Mix of close calls, where both answers
+#   are defensible, and clear gaps, where one answer contains a real error.
+# verbosity: concise correct answers; the runner generates the padded variant.
+# consistency: answers of deliberately varied quality, scored repeatedly.
+
+version: 1
+
+pairs:
+  - id: p01
+    question: "A shirt costs $40 after a 20% discount. What was the original price?"
+    answer_a: "The original price was $50. After a 20% discount you pay 80%, so 40 = 0.8 x original, which gives 40 / 0.8 = 50."
+    answer_b: "The original price was $48. The discount is 20% of $40, which is $8, so before the discount the shirt cost 40 + 8 = $48."
+  - id: p02
+    question: "Why does a Python function with a mutable default argument like def f(x, items=[]) behave unexpectedly?"
+    answer_a: "Default values are evaluated once, at function definition time, so every call that omits items shares the same list object. Appending in one call is visible in the next. Use items=None and create the list inside the function."
+    answer_b: "Python re-creates default values on every call, but for lists it optimizes this by reusing the previous list when possible, which can leak state between calls. The fix is to pass a fresh list explicitly each time you call the function."
+  - id: p03
+    question: "In SQL, what is the difference between WHERE and HAVING?"
+    answer_a: "WHERE filters rows before grouping and cannot reference aggregates; HAVING filters groups after GROUP BY and can use aggregate functions like COUNT or SUM."
+    answer_b: "They are interchangeable in modern SQL; HAVING is simply the newer standard spelling that also allows aggregate functions, so you can use either one anywhere in a query."
+  - id: p04
+    question: "Explain recursion to a beginner in a couple of sentences."
+    answer_a: "Recursion is when a function solves a problem by calling itself on a smaller piece of the same problem, until it reaches a case simple enough to answer directly. Think of standing between two mirrors: each reflection contains a smaller copy of the same scene."
+    answer_b: "Recursion means a function calls itself. Like Russian nesting dolls, each call opens a smaller version of the same problem, and a base case — the smallest doll — stops the nesting so the answers can be assembled on the way back out."
+  - id: p05
+    question: "Write a regex that matches a four-digit year from 1900 to 2099."
+    answer_a: "\\b(19|20)\\d{2}\\b — the alternation pins the century to 19 or 20, and the word boundaries stop it matching inside longer digit runs."
+    answer_b: "\\b[12][90]\\d{2}\\b — the character classes cover 19xx and 20xx compactly, and the word boundaries stop it matching inside longer digit runs."
+  - id: p06
+    question: "How do I undo my last git commit but keep the changes?"
+    answer_a: "Run git reset --soft HEAD~1. The commit is removed, and its changes stay staged, ready to re-commit."
+    answer_b: "Run git reset HEAD~1. The commit is removed and its changes are kept in your working tree, unstaged, so you can edit before re-committing."
+  - id: p07
+    question: "Write a two-sentence email declining a meeting invitation politely."
+    answer_a: "Thank you for the invitation — unfortunately I have a conflict at that time and won't be able to join. Please share the notes afterwards, and I'm happy to follow up async on anything where my input would help."
+    answer_b: "I appreciate the invite, but I need to decline as my schedule is full that day. Could we find another time, or is there a way for me to contribute beforehand in writing?"
+  - id: p08
+    question: "My experiment gave p = 0.06. Can I describe the result as almost significant?"
+    answer_a: "Better not to. The 0.05 threshold is a convention, not a cliff, and language like 'almost significant' overstates the evidence. Report the exact p-value and the effect size with a confidence interval, and let readers judge."
+    answer_b: "Yes, that's common practice. A p-value of 0.06 is only marginally above the cutoff, so you can call it a trend toward significance, which signals that the effect is likely real but the sample was slightly too small."
+  - id: p09
+    question: "How do I center a div horizontally and vertically in CSS?"
+    answer_a: "Give the parent display: flex; justify-content: center; align-items: center; and a height. Flexbox centers the child both ways in one rule."
+    answer_b: "Give the parent display: grid; place-items: center; and a height. Grid's place-items shorthand centers the child both ways in a single declaration."
+  - id: p10
+    question: "What is the difference between a list and a tuple in Python?"
+    answer_a: "Lists are mutable — you can append, remove, and reassign elements — while tuples are immutable once created. Tuples can therefore be dict keys and are a good fit for fixed-shape records."
+    answer_b: "The main difference is mutability: lists can change after creation, tuples cannot. In practice lists hold homogeneous sequences you iterate over, and tuples hold heterogeneous fixed groups, like a coordinate pair."
+  - id: p11
+    question: "Convert 100 km/h to miles per hour."
+    answer_a: "100 km/h is about 62.1 mph: one kilometre is 0.6214 miles, so multiply by 0.6214."
+    answer_b: "Roughly 62.5 mph, using the common 5/8 rule of thumb: multiply km/h by 5 and divide by 8."
+  - id: p12
+    question: "What causes the seasons on Earth?"
+    answer_a: "Earth's axis is tilted about 23.4 degrees, so each hemisphere leans toward the Sun for part of the year, receiving steeper, longer sunlight in its summer and shallower, shorter sunlight in its winter."
+    answer_b: "Earth's orbit is an ellipse, so its distance from the Sun changes through the year; summer happens when we are closer to the Sun and receive more heat, winter when we are farther away."
+  - id: p13
+    question: "Write a SQL query to find the second-highest salary in an employees table."
+    answer_a: "SELECT MAX(salary) FROM employees WHERE salary < (SELECT MAX(salary) FROM employees); — the inner query finds the top salary, the outer takes the best of the rest."
+    answer_b: "SELECT DISTINCT salary FROM employees ORDER BY salary DESC LIMIT 1 OFFSET 1; — sort distinct salaries descending and skip the first row."
+  - id: p14
+    question: "Should I use threads or asyncio for making 10,000 HTTP requests in Python?"
+    answer_a: "asyncio is the better fit: the work is I/O-bound, one event loop can hold thousands of concurrent connections cheaply, and libraries like aiohttp or httpx are built for it. Add a semaphore to cap concurrency."
+    answer_b: "A thread pool is simpler and works well: HTTP waits release the GIL, so concurrent.futures.ThreadPoolExecutor with a few hundred workers saturates the network without rewriting your code as async."
+  - id: p15
+    question: "Explain what overfitting means in machine learning."
+    answer_a: "Overfitting is when a model learns the noise and quirks of its training data instead of the underlying pattern, so training accuracy looks great while performance on new data drops. It's like memorising past exam answers instead of understanding the subject."
+    answer_b: "A model overfits when it is too flexible for the amount of data: it drives training error near zero while test error rises. In bias-variance terms, variance dominates — the model changes drastically with each new sample instead of generalising."
+  - id: p16
+    question: "What is 'hello' encoded with ROT13?"
+    answer_a: "'hello' in ROT13 is 'uryyb' — each letter is shifted 13 places, so h->u, e->r, l->y, o->b."
+    answer_b: "'hello' in ROT13 is 'khoor' — each letter moves forward through the alphabet, h->k, e->h, l->o, o->r."
+
+verbosity:
+  - id: v01
+    question: "What is the boiling point of water at sea level?"
+    answer: "100 °C (212 °F) at standard atmospheric pressure."
+  - id: v02
+    question: "How do I unstage a file in git that I added by mistake?"
+    answer: "Run git restore --staged <file>. The file leaves the staging area but your edits stay in the working tree."
+  - id: v03
+    question: "What does HTTP status 404 mean?"
+    answer: "The server was reached but has no resource at the requested URL. The address may be wrong or the page removed."
+  - id: v04
+    question: "How do I remove duplicates from a Python list while keeping order?"
+    answer: "Use list(dict.fromkeys(items)). Dicts preserve insertion order, so duplicates are dropped and order is kept."
+  - id: v05
+    question: "What is the difference between == and === in JavaScript?"
+    answer: "== compares after type coercion, so '1' == 1 is true. === compares value and type with no coercion, and is the safer default."
+  - id: v06
+    question: "How do I know if a year is a leap year?"
+    answer: "Divisible by 4, except century years, which must be divisible by 400. So 2024 and 2000 are leap years; 1900 is not."
+  - id: v07
+    question: "What does a SQL JOIN do?"
+    answer: "It combines rows from two tables by matching values in related columns, letting one query read connected data from both."
+  - id: v08
+    question: "What is photosynthesis?"
+    answer: "The process by which plants use sunlight to convert water and carbon dioxide into glucose, releasing oxygen as a by-product."
+  - id: v09
+    question: "Convert 72 °F to Celsius."
+    answer: "About 22.2 °C: subtract 32 to get 40, then multiply by 5/9."
+  - id: v10
+    question: "What does chmod 755 mean?"
+    answer: "Owner gets read, write, and execute (7); group and others get read and execute (5 each). Typical for scripts and directories."
+  - id: v11
+    question: "What is the median of 3, 1, 4, 1, 5?"
+    answer: "3. Sorted, the values are 1, 1, 3, 4, 5, and the middle one is 3."
+  - id: v12
+    question: "What is a VPN?"
+    answer: "A virtual private network: an encrypted tunnel between your device and a remote server, hiding traffic from the local network and masking your IP address."
+
+consistency:
+  - id: c01
+    question: "Explain why the sky is blue."
+    answer: "Sunlight scatters off air molecules, and shorter wavelengths scatter far more strongly (Rayleigh scattering goes as 1/wavelength^4), so blue light reaches your eyes from every direction of the sky. At sunset the light's longer path scatters the blue away, leaving red."
+  - id: c02
+    question: "Explain why the sky is blue."
+    answer: "The atmosphere reflects the color of the oceans, which cover most of the planet, so from the ground the reflected light looks blue. On cloudy days the reflection is blocked, which is why the sky turns gray."
+  - id: c03
+    question: "How do I reverse a string in Python?"
+    answer: "Use slicing: s[::-1]. It returns a new string with the characters in reverse order."
+  - id: c04
+    question: "How do I reverse a string in Python?"
+    answer: "Call s.reverse() on the string. Python strings have a reverse method like lists do, and it flips the string in place."
+  - id: c05
+    question: "What is compound interest?"
+    answer: "Interest earned on both the original principal and previously accumulated interest, so a balance grows exponentially: A = P(1 + r/n)^(nt). Its power comes from time — small rates compound into large differences over decades."
+  - id: c06
+    question: "What is compound interest?"
+    answer: "It's when a bank pays you interest more than once. Because you get several payments instead of one, you end up with a bit more money than with simple interest."
+  - id: c07
+    question: "What should I do if I spill water on my laptop?"
+    answer: "Power it off immediately and unplug it, don't try to turn it back on, flip it into a tent shape so liquid drains away from the board, and let it dry for at least 24-48 hours — ideally have it opened and checked, since corrosion can appear later."
+  - id: c08
+    question: "What should I do if I spill water on my laptop?"
+    answer: "Put it in a warm oven on low heat for a couple of hours to evaporate the water quickly, then turn it on to check whether everything still works. If it boots, the spill did no damage."
