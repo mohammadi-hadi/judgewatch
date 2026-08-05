@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use judgewatch probes or results, please cite this repository."
+title: "judgewatch: monthly bias audits of LLM judges"
+type: software
+authors:
+  - family-names: Mohammadi
+    given-names: Hadi
+version: 0.1.0
+date-released: 2026-08-05
+license: MIT
+repository-code: "https://github.com/mohammadi-hadi/judgewatch"
+url: "https://mohammadi.cv/judgewatch/"
+keywords:
+  - llm-as-judge
+  - evaluation
+  - bias
+  - benchmark
