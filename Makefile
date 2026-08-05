@@ -25,14 +25,16 @@ site:
 serve:
 	.venv/bin/python -m http.server 8765 -d docs
 
-# Build sdist + wheel from a clean `git archive` export, so only committed
-# files can reach a distribution, then audit the artifacts.
+# Build sdist + wheel from a clean `git archive` export in a temp directory
+# OUTSIDE the working tree (hatchling walks upward and would otherwise pick up
+# local ignore files), so only committed files can reach a distribution.
+# The artifacts are audited afterwards.
 build:
-	rm -rf dist .build-src
-	mkdir .build-src
-	git archive HEAD | tar -x -C .build-src
-	cd .build-src && ../.venv/bin/python -m build --outdir ../dist
-	rm -rf .build-src
+	rm -rf dist
+	@export_dir=$$(mktemp -d) && \
+	git archive HEAD | tar -x -C "$$export_dir" && \
+	.venv/bin/python -m build --outdir dist "$$export_dir" && \
+	rm -rf "$$export_dir"
 	@if tar -tzf dist/*.tar.gz | grep -qiE 'claude|gitignore'; then \
 		echo "TAINTED SDIST"; exit 1; fi
 	@if unzip -l dist/*.whl | grep -qiE 'claude|gitignore'; then \
