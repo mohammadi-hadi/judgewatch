@@ -1,7 +1,8 @@
-"""Render the static leaderboard (docs/index.html) from data/latest.json.
+"""Render the static leaderboard (docs/) from data/latest.json.
 
-Self-contained: inline CSS, no external requests, light/dark via
-prefers-color-scheme plus a data-theme override.
+Outputs are self-contained: inline CSS, no external requests, light/dark via
+prefers-color-scheme plus a data-theme override. Alongside index.html, the
+full payload is published as docs/data.json for machine consumption.
 """
 
 import html
@@ -10,26 +11,40 @@ from pathlib import Path
 
 REPO_URL = "https://github.com/mohammadi-hadi/judgewatch"
 
+# (metric key, panel title, note, reference line as a fraction or None)
 METRIC_PANELS = [
     (
         "position_flip_rate",
         "Position flips",
         "Verdict changed when the two answers were swapped. Lower is better.",
+        None,
     ),
     (
         "verbosity_preference_rate",
         "Verbosity preference",
-        "Chose the padded answer over the identical concise one. 50% means indifferent; higher rewards length.",
+        (
+            "Chose the padded answer over the identical concise one. "
+            "The dashed line marks 50% (indifferent); higher rewards length."
+        ),
+        0.5,
     ),
     (
         "bandwagon_flip_rate",
         "Bandwagon flips",
-        "A fabricated expert-consensus line flipped the judge's own verdict. Lower is better.",
+        (
+            "A fabricated expert-consensus line flipped the judge's own verdict. "
+            "Lower is better."
+        ),
+        None,
     ),
     (
         "consistency_agreement_rate",
         "Score agreement",
-        "Identical 1-10 scores across repeated runs of the same item. Higher is better.",
+        (
+            "Identical 1-10 scores across repeated runs of the same item. "
+            "Higher is better."
+        ),
+        None,
     ),
 ]
 
@@ -47,16 +62,21 @@ def _pct(value):
     return "–" if value is None else f"{value * 100:.0f}%"
 
 
-def _panel(judges, key, title, note):
+def _panel(judges, key, title, note, ref):
+    ref_marker = (
+        f'<span class="ref" style="left:{ref * 100:.0f}%"></span>' if ref else ""
+    )
     rows = []
     for judge in judges:
         value = judge["metrics"].get(key)
         width = 0.0 if value is None else max(0.0, min(1.0, value)) * 100
         label = html.escape(judge["label"])
+        text = f"{label}: {_pct(value)}"
         rows.append(
-            f'<div class="row" title="{label}: {_pct(value)}">'
+            f'<div class="row" role="img" aria-label="{text}" title="{text}">'
             f'<span class="rlabel">{label}</span>'
-            f'<span class="track"><span class="bar" style="width:{width:.1f}%"></span></span>'
+            f'<span class="track">{ref_marker}'
+            f'<span class="bar" style="width:{width:.1f}%"></span></span>'
             f'<span class="rval">{_pct(value)}</span>'
             f"</div>"
         )
@@ -67,12 +87,24 @@ def _panel(judges, key, title, note):
     )
 
 
-def _table(judges):
+def _delta(current, previous):
+    if current is None or previous is None:
+        return ""
+    points = round((current - previous) * 100)
+    if points == 0:
+        return ""
+    return f' <span class="delta">{points:+d}</span>'
+
+
+def _table(judges, previous_metrics):
     head = "".join(f"<th>{html.escape(t)}</th>" for _, t in TABLE_COLUMNS)
     body = []
     for judge in judges:
+        prev = previous_metrics.get(judge["judge"], {})
         cells = "".join(
-            f'<td>{_pct(judge["metrics"].get(k))}</td>' for k, _ in TABLE_COLUMNS
+            f'<td>{_pct(judge["metrics"].get(k))}'
+            f'{_delta(judge["metrics"].get(k), prev.get(k))}</td>'
+            for k, _ in TABLE_COLUMNS
         )
         body.append(
             f'<tr><td class="tlabel">{html.escape(judge["label"])}</td>{cells}</tr>'
@@ -86,6 +118,13 @@ def _table(judges):
 def render(payload):
     judges = payload.get("judges", [])
     run = payload.get("run")
+    history = payload.get("history") or []
+
+    previous_metrics = {}
+    if len(history) >= 2:
+        previous_metrics = {
+            j["judge"]: j["metrics"] for j in history[-2]["judges"]
+        }
 
     if judges:
         status = (
@@ -94,10 +133,17 @@ def render(payload):
             f'probe set v{judges[0]["probeset"]} &middot; '
             f'{judges[0]["n_calls"]} calls per judge'
         )
-        panels = "".join(_panel(judges, k, t, n) for k, t, n in METRIC_PANELS)
+        panels = "".join(_panel(judges, k, t, n, r) for k, t, n, r in METRIC_PANELS)
+        delta_note = (
+            '<p class="note">Small figures show the change vs the previous run, '
+            "in percentage points.</p>"
+            if previous_metrics
+            else ""
+        )
         content = (
             f'<div class="grid">{panels}</div>'
-            f'<h2>All metrics</h2><div class="tablewrap">{_table(judges)}</div>'
+            f'<h2>All metrics</h2><div class="tablewrap">'
+            f"{_table(judges, previous_metrics)}</div>{delta_note}"
         )
     else:
         status = "No audits published yet &mdash; the first monthly run is pending."
@@ -106,12 +152,18 @@ def render(payload):
             f'Run one yourself: see the <a href="{REPO_URL}">repository</a>.</div>'
         )
 
+    generated = payload.get("generated_at") or ""
+    updated = (
+        f" &middot; updated {html.escape(generated[:10])}" if judges and generated else ""
+    )
+
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>judgewatch &mdash; monthly bias audits of LLM judges</title>
+<meta name="description" content="Monthly bias audits of LLM judges: position, verbosity, bandwagon and consistency probes on a frozen probe set.">
 <style>
   :root {{
     color-scheme: light;
@@ -158,8 +210,10 @@ def render(payload):
   .row {{ display: flex; align-items: center; gap: 10px; margin: 7px 0; }}
   .rlabel {{ flex: 0 0 138px; font-size: 12.5px; color: var(--ink-2);
              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }}
-  .track {{ flex: 1; height: 14px; background: transparent;
+  .track {{ flex: 1; height: 14px; position: relative;
             border-left: 2px solid var(--grid); }}
+  .ref {{ position: absolute; top: -2px; bottom: -2px;
+          border-left: 1px dashed var(--muted); opacity: 0.6; }}
   .bar {{ display: block; height: 100%; background: var(--accent);
           border-radius: 0 4px 4px 0; min-width: 2px; }}
   .rval {{ flex: 0 0 44px; text-align: right; font-size: 12.5px; color: var(--ink);
@@ -173,6 +227,7 @@ def render(payload):
   th {{ color: var(--muted); font-weight: 600; }}
   tr:last-child td {{ border-bottom: none; }}
   .tlabel {{ color: var(--ink); }}
+  .delta {{ color: var(--muted); font-size: 11px; }}
   .empty {{
     background: var(--surface); border: 1px dashed var(--grid); border-radius: 10px;
     padding: 40px 24px; text-align: center; color: var(--ink-2);
@@ -187,7 +242,7 @@ def render(payload):
 <main>
   <h1><a href="{REPO_URL}">judgewatch</a></h1>
   <p class="tagline">Monthly bias audits of LLM judges: the same frozen probe set, every month, so drift and bias are visible.</p>
-  <p class="status">{status}</p>
+  <p class="status">{status}{updated}</p>
   {content}
   <h2>Method</h2>
   <ul class="method">
@@ -199,6 +254,7 @@ def render(payload):
   </ul>
   <footer>
     <a href="{REPO_URL}">Source &amp; methodology</a> &middot;
+    <a href="data.json">Data (JSON)</a> &middot;
     <a href="{REPO_URL}#sponsoring">Sponsor the audit</a> &middot; MIT licensed
   </footer>
 </main>
@@ -212,5 +268,6 @@ def build_site(latest_path, docs_dir):
     docs = Path(docs_dir)
     docs.mkdir(parents=True, exist_ok=True)
     (docs / "index.html").write_text(render(payload))
+    (docs / "data.json").write_text(json.dumps(payload, indent=2) + "\n")
     (docs / ".nojekyll").write_text("")
     return docs / "index.html"

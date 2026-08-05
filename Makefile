@@ -1,7 +1,10 @@
-.PHONY: install test audit report site serve
+.PHONY: install lint test audit report site serve
 
 install:
 	python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
+
+lint:
+	.venv/bin/ruff check .
 
 test:
 	.venv/bin/python -m pytest -q
@@ -12,8 +15,11 @@ audit:
 	.venv/bin/python -m judgewatch report
 	.venv/bin/python -m judgewatch site
 
-site:
+report:
 	.venv/bin/python -m judgewatch report
+	.venv/bin/python -m judgewatch site
+
+site:
 	.venv/bin/python -m judgewatch site
 
 serve:
