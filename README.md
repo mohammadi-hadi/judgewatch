@@ -2,6 +2,10 @@
 
 Monthly bias audits of LLM judges.
 
+[![CI](https://github.com/mohammadi-hadi/judgewatch/actions/workflows/test.yml/badge.svg)](https://github.com/mohammadi-hadi/judgewatch/actions/workflows/test.yml)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21806464.svg)](https://doi.org/10.5281/zenodo.21806464)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 LLM-as-judge is now the default way to evaluate models, agents, and prompts —
 but judges have measurable biases, and they drift when providers update models
 behind stable API names. judgewatch runs a **frozen probe set** against popular
