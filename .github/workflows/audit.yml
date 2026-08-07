@@ -27,8 +27,10 @@ jobs:
       - run: pip install -e .
       - name: Decide whether to run
         id: plan
+        env:
+          JUDGES: ${{ inputs.judges }}
         run: |
-          if [ -n "${{ inputs.judges }}" ]; then
+          if [ -n "$JUDGES" ]; then
             echo "go=1" >> "$GITHUB_OUTPUT"
           else
             ENABLED=$(python -c "import yaml; print(sum(1 for j in (yaml.safe_load(open('judges.yaml')) or {}).get('judges', []) if j.get('enabled')))")
@@ -41,10 +43,12 @@ jobs:
           fi
       - name: Run audit
         if: steps.plan.outputs.go == '1'
+        env:
+          JUDGES: ${{ inputs.judges }}
         run: |
           MONTH=$(date -u +%Y-%m)
-          if [ -n "${{ inputs.judges }}" ]; then
-            python -m judgewatch run --month "$MONTH" --judges "${{ inputs.judges }}"
+          if [ -n "$JUDGES" ]; then
+            python -m judgewatch run --month "$MONTH" --judges "$JUDGES"
           else
             python -m judgewatch run --month "$MONTH"
           fi
