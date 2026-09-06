@@ -155,12 +155,11 @@ Sponsors](https://github.com/sponsors/mohammadi-hadi).
 - `probeset_v2.yaml` with community-contributed items (v1 stays frozen and
   keeps running for comparability).
 
-## Related projects
+## Part of evalstack
 
-- [judgekit](https://github.com/mohammadi-hadi/judgekit) — audit *your own*
-  judge pipelines in depth; judgewatch is the public, longitudinal complement.
-- [trajectory-judge](https://github.com/mohammadi-hadi/trajectory-judge) —
-  evaluating agent trajectories with LLM judges.
+[evalstack](https://github.com/mohammadi-hadi/evalstack) is the map of these
+eleven evaluation tools: what each one measures, what it found on real data,
+and the two chains that run end to end.
 
 ## Citing
 
