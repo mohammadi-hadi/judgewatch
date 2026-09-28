@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use judgewatch probes or results, please cite this repository."
-title: "judgewatch: monthly bias audits of LLM judges"
+title: "judgewatch: a probe set and harness for auditing LLM judges"
 type: software
 authors:
   - family-names: Mohammadi

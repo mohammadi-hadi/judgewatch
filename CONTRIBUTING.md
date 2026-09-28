@@ -14,7 +14,7 @@ needed. CI runs the same lint + tests on Python 3.10 and 3.14.
 ## Adding a judge
 
 Open a PR adding an entry to `judges.yaml` (keep `enabled: false`; the
-maintainer enables judges that the monthly budget covers). Any
+maintainer enables judges that the budget covers). Any
 Anthropic model or OpenAI-compatible `/chat/completions` endpoint works.
 
 ## Probe items

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "judgewatch"
 version = "0.1.0"
-description = "Monthly bias audits of LLM judges, published as a public leaderboard"
+description = "A frozen probe set and a harness for auditing LLM judges for bias"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
