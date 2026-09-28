@@ -13,8 +13,8 @@ from pathlib import Path
 REPO_URL = "https://github.com/mohammadi-hadi/judgewatch"
 SITE_URL = "https://mohammadi.cv/judgewatch/"
 TAGLINE = (
-    "Monthly bias audits of LLM judges: the same frozen probe set, "
-    "every month, so drift and bias are visible."
+    "A frozen probe set for the known biases of LLM judges, "
+    "and a harness that runs it against a judge model."
 )
 
 # (metric key, panel title, note, reference line as a fraction or None)
@@ -216,10 +216,11 @@ def render(payload):
             f"{_table(judges, previous_metrics, history)}</div>{delta_note}"
         )
     else:
-        status = "No audits published yet &mdash; the first monthly run is pending."
+        status = "No audit has been published yet."
         content = (
-            '<div class="empty">Results will appear here after the first audit. '
-            f'Run one yourself: see the <a href="{REPO_URL}">repository</a>.</div>'
+            '<div class="empty">Results appear here when an audit is published. '
+            "To run the probes against a judge yourself, see the "
+            f'<a href="{REPO_URL}">repository</a>.</div>'
         )
 
     generated = payload.get("generated_at") or ""
@@ -232,9 +233,9 @@ def render(payload):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>judgewatch &mdash; monthly bias audits of LLM judges</title>
+<title>judgewatch: bias probes for LLM judges</title>
 <meta name="description" content="{TAGLINE}">
-<meta property="og:title" content="judgewatch — monthly bias audits of LLM judges">
+<meta property="og:title" content="judgewatch: bias probes for LLM judges">
 <meta property="og:description" content="{TAGLINE}">
 <meta property="og:url" content="{SITE_URL}">
 <meta property="og:type" content="website">
@@ -333,8 +334,7 @@ def render(payload):
   </ul>
   <footer>
     <a href="{REPO_URL}">Source &amp; methodology</a> &middot;
-    <a href="data.json">Data (JSON)</a> &middot;
-    <a href="{REPO_URL}#sponsoring">Sponsor the audit</a> &middot; MIT licensed
+    <a href="data.json">Data (JSON)</a> &middot; MIT licensed
   </footer>
 </main>
 </body>

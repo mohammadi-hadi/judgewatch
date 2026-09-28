@@ -7,17 +7,19 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-*Monthly bias audits of LLM judges.*
+*A frozen bias probe set for LLM judges, and a harness to run it.*
 
 </div>
 
 LLM-as-judge is now the default way to evaluate models, agents, and prompts —
 but judges have measurable biases, and they drift when providers update models
-behind stable API names. judgewatch runs a **frozen probe set** against popular
-judge models on a monthly schedule and publishes the results, so you can see
-which judge to trust this month and whether yours changed under you.
+behind stable API names. judgewatch is a **frozen probe set** for four of
+those biases and a harness that runs it against a judge model, scores the
+verdicts, and builds a static results page from the output.
 
-**Leaderboard:** https://mohammadi.cv/judgewatch/ (first audit pending)
+No audit has been run or published yet. Every judge in `judges.yaml` is
+disabled, and the results page at https://mohammadi.cv/judgewatch/ is empty:
+its `data.json` has `"run": null` and an empty `history`.
 
 ## What it measures
 
@@ -36,7 +38,7 @@ not noise.
 
 - The probe set (`judgewatch/probes/probeset_v1.yaml`, shipped with the
   package) is frozen and versioned. The same
-  36 hand-written items run every month, so results are comparable across
+  36 hand-written items go into every run, so results are comparable across
   runs and drift is attributable to the judge, not the test.
 - Every pairwise item is judged in **both orders**, which separates position
   effects from content preference. The verbosity probe also runs both orders,
@@ -51,8 +53,10 @@ not noise.
 
 The biases probed here are documented in the literature — see Zheng et al.
 2023, ["Judging LLM-as-a-Judge with MT-Bench and Chatbot
-Arena"](https://arxiv.org/abs/2306.05685). judgewatch's contribution is
-longitudinal: the same probes, monthly, across judges.
+Arena"](https://arxiv.org/abs/2306.05685). judgewatch is built for the
+longitudinal view: because the probes never change, runs on different judges
+and at different times can be compared directly. No runs have been published,
+so that comparison does not exist yet.
 
 ## Run it yourself
 
@@ -80,8 +84,8 @@ judgewatch report
 judgewatch site
 ```
 
-Probe calls run 4-way concurrent by default (`--workers`), a judge finishes in
-a couple of minutes, and progress is printed as each probe starts.
+Probe calls run 4-way concurrent by default (`--workers`), and progress is
+printed as each probe starts.
 
 ## Gate your CI on it
 
@@ -107,53 +111,43 @@ risk tolerance. `--save results.json` keeps the full per-item records.
 
 ## Data
 
-Everything the leaderboard shows is also published as JSON:
+The results page publishes its data as JSON:
 
 **https://mohammadi.cv/judgewatch/data.json**
 
-The payload carries the latest run, a `generated_at` timestamp, and the full
-month-by-month `history`, so you can build badges, dashboards, or your own
-trend analysis on top of it. Raw per-item records (every verdict, every score)
-live in the repo under `data/runs/<month>/`.
+Today that file holds no results: `run` is `null`, and `judges` and `history`
+are empty. When a run is published, the payload carries the latest run, a
+`generated_at` timestamp, and the run-by-run `history`, so you can build
+badges, dashboards, or your own trend analysis on top of it. Raw per-item
+records (every verdict, every score) are written under `data/runs/<month>/`;
+the repo has none yet.
 
-Per-judge [shields.io](https://shields.io) endpoints are published under
-`badges/` — to show a judge's current audit result in your own README:
+The site build also writes [shields.io](https://shields.io) endpoints under
+`badges/`: one per audited judge, plus `badges/leader.json` for the
+best-ranked judge. Only `leader.json` exists today, and it reads "no audits
+yet". Once results for a judge are published, its badge can go in your README:
 
 ```
 ![judgewatch](https://img.shields.io/endpoint?url=https%3A%2F%2Fmohammadi.cv%2Fjudgewatch%2Fbadges%2Fclaude-haiku-4-5.json)
 ```
-
-(`badges/leader.json` always points at the currently best-ranked judge.)
 
 ### Cost
 
 A full audit is 96 calls per judge with short prompts. Assuming roughly 700
 input and 200–500 output tokens per call (more for models that think by
 default), one judge costs about **$0.15–0.25** on a Haiku-class model and
-**under $2** on an Opus-class model at August 2026 API prices — a five-judge
-monthly audit is a few dollars.
-
-## Sponsoring
-
-judgewatch is free and MIT-licensed, and the monthly runs are paid out of
-pocket. Sponsorship decides how far the audit scales:
-
-- more judges per month (including expensive frontier models),
-- larger probe sets and new probes (self-preference is next — see roadmap),
-- and the maintenance time to keep results trustworthy.
-
-Sponsors are credited on the leaderboard, and sponsor votes pick which judge
-models get added next. Sponsor via [GitHub
-Sponsors](https://github.com/sponsors/mohammadi-hadi).
+**under $2** on an Opus-class model at August 2026 API prices, so auditing
+five judges costs a few dollars. These figures come from the token assumptions
+above, not from a measured run.
 
 ## Roadmap
 
 - Self-preference probe: does a judge favor answers written by its own model
-  family? (Needs a generation stage, so it lands once sponsorship covers it.)
-- Richer trend charts (the table already shows month-over-month deltas and a
-  position-flip sparkline once two runs exist).
+  family? (Needs a generation stage.)
+- Richer trend charts (the site build already renders run-over-run deltas and
+  a position-flip sparkline once two runs exist).
 - `probeset_v2.yaml` with community-contributed items (v1 stays frozen and
-  keeps running for comparability).
+  stays in use, so runs on it remain comparable).
 
 ## Part of evalstack
 

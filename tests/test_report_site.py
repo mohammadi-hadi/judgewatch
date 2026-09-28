@@ -110,6 +110,7 @@ def test_site_empty_state(tmp_path):
     latest = tmp_path / "latest.json"
     latest.write_text(json.dumps({"run": None, "judges": [], "history": []}))
     html = build_site(latest, tmp_path / "docs").read_text()
-    assert "first monthly run is pending" in html
+    assert "No audit has been published yet." in html
+    assert "sponsor" not in html.lower()
     leader = json.loads((tmp_path / "docs" / "badges" / "leader.json").read_text())
     assert leader["message"] == "no audits yet"
